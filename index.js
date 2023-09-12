@@ -4,10 +4,13 @@ const fs = require("fs");
 const app = express();
 const port = 6000;
 
+app.use(express.json());
 
-// /register api which registers and stores user details in users.json file
 
-app.get("/", (req, res) => res.send("Hello World!"));
+app.get("/", async(req, res) => {
+    const quiz = await JSON.parse(fs.readFileSync("./data/quiz.json"))
+    res.send(quiz);
+});
 
 app.post("/register", async (req, res) => {});
 
