@@ -1,38 +1,60 @@
 const express = require("express");
+const cors = require("cors");
+const scrapeMemes = require("./puppet.js");
+
 const fs = require("fs");
 
+const port = 3030;
+
 const app = express();
-const port = 6000;
 
-app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
 
+app.get("/", async (_req, res) => {
+  // Search phrases
+  try {
+    const bad = await scrapeMemes("bad");
+    const good = await scrapeMemes("good");
+    const amazing = await scrapeMemes("amazing");
 
-app.get("/", async(req, res) => {
-    const quiz = await JSON.parse(fs.readFileSync("./data/quiz.json"))
-    res.send(quiz);
-});
+    // Create an array of meme objects
+    const memesArray = {
+      memes: [
+        { category: "bad", imageUrl: bad },
+        { category: "good", imageUrl: good },
+        { category: "amazing", imageUrl: amazing },
+      ],
+    };
 
-app.post("/register", async (req, res) => {});
-
-app.post("/login", async (req, res) => {
-  const username = req.body.username;
-  const password = req.body.password;
-  const users = JSON.parse(fs.readFileSync("./data/users.json"));
-
-  users
-    .find((user) => user.username === username && user.password === password)
-    .then((result) => {
-      if (result) {
-        res.send("Login Success");
-      } else {
-        res.send("Login Failed");
-      }
-    })
-    .catch((err) => {
-        res.send("User not found");
+    fs.writeFile("memes.json", JSON.stringify(memesArray), (err) => {
+      if (err) throw err;
+      console.log("The file has been saved!");
     });
+
+    res.status(200).json(memesArray);
+  } catch (error) {
+    console.error("Error:", error);
+    //error code
+    res.status(500).send("An error occurred");
+  }
 });
 
-app.get("/questions", async (req, res) => {});
+app.get("/memes", async (_req, res) => {
+  try {
+    const memes = fs.readFileSync("memes.json");
+    res.status(200).json(JSON.parse(memes));
+  } catch (error) {
+    console.error("Error:", error);
+    //error code
+    res.status(500).send("An error occurred");
+  }
+});
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+app.listen(port, () =>
+  console.log(`Example app listening on http://localhost:${port}`)
+);
